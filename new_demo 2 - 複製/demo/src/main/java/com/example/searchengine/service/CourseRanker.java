@@ -42,7 +42,6 @@ public class CourseRanker {
         keywordWeights.put("討論", 25);
         keywordWeights.put("報告", 20);
         keywordWeights.put("授課", 20);
-
         keywordWeights.put("分組", 15);
 
         return keywordWeights;

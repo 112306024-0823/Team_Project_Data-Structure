@@ -10,4 +10,3 @@ public class SearchEngineApplication {
         SpringApplication.run(SearchEngineApplication.class, args);
     }
 }
- 

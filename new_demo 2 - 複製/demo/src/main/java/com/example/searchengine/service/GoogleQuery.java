@@ -24,6 +24,9 @@ public Map<String, String> fetchResults(String query) throws IOException {
     "qrysub.nccu.edu.tw",               // 政大全校課程查詢系統
     "1111opt.com",    // OPT 與課程相關的分享頁
     "medium.com",              // Medium 上標籤為「政大」的頁面
+    "ptt.cc/bbs/NCCU",              // PTT 政大板
+    "site:medium.com 政大"
+
 };
 
 

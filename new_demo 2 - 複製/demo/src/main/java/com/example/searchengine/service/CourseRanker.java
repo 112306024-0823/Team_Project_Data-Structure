@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -58,21 +57,30 @@ public class CourseRanker {
             return new HashMap<>(); // 返回空結果
         }
 
+        // 使用 RC 演算法進行多關鍵字匹配
+        List<Integer> keywordHashes = keywords.stream().map(this::computeHash).collect(Collectors.toList());
+
         Map<String, Integer> rankedResults = new HashMap<>();
         for (Map.Entry<String, String> entry : results.entrySet()) {
             String title = entry.getKey();
             String content = entry.getValue();
 
-            // 標題匹配檢查
-            if (containsAnyKeyword(title, keywords)) {
-                int score = calculateKeywordScore(title, content, keywords);
-                rankedResults.put(title, score);
-            }
+            // 匹配標題和內容
+            int titleScore = searchWithRC(title, keywords, keywordHashes);
+            int contentScore = searchWithRC(content, keywords, keywordHashes);
+
+            // 總得分計算
+            int totalScore = titleScore * 2 + contentScore; // 標題匹配權重更高
+
+            // 關鍵字權重計分
+            totalScore += calculateWeightedScore(title, content);
+
+            rankedResults.put(title, totalScore);
         }
 
-        return rankedResults.entrySet()
-                .stream()
-                .sorted((a, b) -> b.getValue().compareTo(a.getValue())) // 降序排序
+        // 按分數降序排序
+        return rankedResults.entrySet().stream()
+                .sorted((a, b) -> b.getValue().compareTo(a.getValue()))
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
                         Map.Entry::getValue,
@@ -81,22 +89,38 @@ public class CourseRanker {
                 ));
     }
 
-    private boolean containsAnyKeyword(String text, List<String> keywords) {
-        return keywords.stream().anyMatch(text::contains);
-    }
-
-    private int calculateKeywordScore(String title, String content, List<String> keywords) {
+    private int searchWithRC(String text, List<String> keywords, List<Integer> keywordHashes) {
         int score = 0;
+        int textLength = text.length();
 
-        // 遍歷關鍵字並統一計分
-        for (String keyword : keywords) {
-            if (title.contains(keyword)) {
-                score += 5; // 標題關鍵字加分
+        for (int i = 0; i < keywords.size(); i++) {
+            String keyword = keywords.get(i);
+            int keywordLength = keyword.length();
+            int keywordHash = keywordHashes.get(i);
+
+            // 滑動窗口計算哈希值
+            for (int j = 0; j <= textLength - keywordLength; j++) {
+                String substring = text.substring(j, j + keywordLength);
+                if (computeHash(substring) == keywordHash && substring.equals(keyword)) {
+                    score += 1; // 匹配成功得分
+                }
             }
-            score += content.split(Pattern.quote(keyword), -1).length - 1; // 內文關鍵字次數計算
         }
 
-        // 關鍵字權重計分
+        return score;
+    }
+
+    private int computeHash(String str) {
+        int hash = 0;
+        int prime = 31; // 使用素数作为权重基数
+        for (char c : str.toCharArray()) {
+            hash = hash * prime + c;
+        }
+        return hash;
+    }
+
+    private int calculateWeightedScore(String title, String content) {
+        int score = 0;
         for (Map.Entry<String, Integer> entry : keywordWeights.entrySet()) {
             String evalKeyword = entry.getKey();
             int weight = entry.getValue();
@@ -108,7 +132,6 @@ public class CourseRanker {
                 score += weight; // 內文中的關鍵字權重
             }
         }
-
         return score;
     }
 }

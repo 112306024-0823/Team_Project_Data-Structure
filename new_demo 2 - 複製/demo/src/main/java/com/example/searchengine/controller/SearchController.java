@@ -18,29 +18,31 @@ public class SearchController {
     private GoogleQuery googleQuery;
 
     @GetMapping("/search")
-public String search(@RequestParam(value = "query", required = false) String query, Model model) {
-    if (query == null || query.isEmpty()) {
-        model.addAttribute("error", "Query cannot be empty");
-        return "index"; // 返回 index.html
-    }
-
-    try {
-        // 獲取搜尋結果
-        Map<String, String> results = googleQuery.fetchResults(query);
-
-        if (results == null || results.isEmpty()) {
-            model.addAttribute("error", "No results found for query: " + query);
-        } else {
-            model.addAttribute("results", results);
+    public String search(@RequestParam(value = "query", required = false) String query,
+                         @RequestParam(value = "year", required = false) Integer year,
+                         Model model) {
+        // 若 query 為空，設置默認關鍵字
+        if (query == null || query.isEmpty()) {
+            query = "Default Keyword";
         }
-    } catch (IOException e) { // 捕捉 fetchResults 方法中可能的 IOException
-        model.addAttribute("error", "Error fetching results: " + e.getMessage());
-    } catch (Exception e) { // 捕捉其他可能的異常
-        model.addAttribute("error", "Unexpected error occurred: " + e.getMessage());
+
+        try {
+            // 獲取搜尋結果，若有年份篩選，進行篩選處理
+            Map<String, String> results = googleQuery.fetchResults(query, year);
+
+            if (results == null || results.isEmpty()) {
+                model.addAttribute("error", "No results found for query: " + query);
+            } else {
+                model.addAttribute("results", results);
+            }
+        } catch (IOException e) {
+            model.addAttribute("error", "Error fetching results: " + e.getMessage());
+        } catch (Exception e) {
+            model.addAttribute("error", "Unexpected error occurred: " + e.getMessage());
+        }
+
+        model.addAttribute("query", query);
+        model.addAttribute("year", year);
+        return "index"; // 返回 Thymeleaf 渲染的模板
     }
-
-    model.addAttribute("query", query);
-    return "index"; // Thymeleaf 渲染的模板
-}
-
 }

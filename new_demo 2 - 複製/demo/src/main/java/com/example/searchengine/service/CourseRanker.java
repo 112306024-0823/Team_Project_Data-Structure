@@ -83,7 +83,7 @@ public class CourseRanker {
 
     private boolean containsAnyKeyword(String text, List<String> keywords) {
         return keywords.stream().anyMatch(text::contains);
-    }
+    } //檢查該標題是否包含任意一個關鍵字，如不包含，直接跳過
 
     private int calculateKeywordScore(String title, String content, List<String> keywords) {
         int score = 0;

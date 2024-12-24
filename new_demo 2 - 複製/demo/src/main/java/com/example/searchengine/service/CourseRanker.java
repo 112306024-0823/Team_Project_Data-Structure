@@ -1,9 +1,12 @@
 package com.example.searchengine.service;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -57,22 +60,31 @@ public class CourseRanker {
             return new HashMap<>(); // 返回空結果
         }
 
-        // 使用 RC 演算法進行多關鍵字匹配
-        List<Integer> keywordHashes = keywords.stream().map(this::computeHash).collect(Collectors.toList());
+        // 初始化 Aho-Corasick 自動機
+        ACAutomaton automaton = new ACAutomaton();
+        for (String keyword : keywords) {
+            automaton.insert(keyword);
+        }
+        automaton.buildFailureLinks();
 
         Map<String, Integer> rankedResults = new HashMap<>();
         for (Map.Entry<String, String> entry : results.entrySet()) {
             String title = entry.getKey();
             String content = entry.getValue();
 
+            // 跳過包含特定關鍵字的標題
+            if (title.contains("考古題") || title.contains("加簽")) {
+                continue;
+            }
+
+
+
             // 匹配標題和內容
-            int titleScore = searchWithRC(title, keywords, keywordHashes);
-            int contentScore = searchWithRC(content, keywords, keywordHashes);
+            Map<String, Integer> titleMatches = automaton.search(title);
+            Map<String, Integer> contentMatches = automaton.search(content);
 
-            // 總得分計算
-            int totalScore = titleScore * 2 + contentScore; // 標題匹配權重更高
-
-            // 關鍵字權重計分
+            // 計算總得分
+            int totalScore = calculateACScore(titleMatches, contentMatches);
             totalScore += calculateWeightedScore(title, content);
 
             rankedResults.put(title, totalScore);
@@ -89,34 +101,19 @@ public class CourseRanker {
                 ));
     }
 
-    private int searchWithRC(String text, List<String> keywords, List<Integer> keywordHashes) {
+    private int calculateACScore(Map<String, Integer> titleMatches, Map<String, Integer> contentMatches) {
         int score = 0;
-        int textLength = text.length();
 
-        for (int i = 0; i < keywords.size(); i++) {
-            String keyword = keywords.get(i);
-            int keywordLength = keyword.length();
-            int keywordHash = keywordHashes.get(i);
+        // 標題和內容匹配的加權分數
+        for (Map.Entry<String, Integer> entry : titleMatches.entrySet()) {
+            score += entry.getValue() * 5; // 標題匹配得分更高
+        }
 
-            // 滑動窗口計算哈希值
-            for (int j = 0; j <= textLength - keywordLength; j++) {
-                String substring = text.substring(j, j + keywordLength);
-                if (computeHash(substring) == keywordHash && substring.equals(keyword)) {
-                    score += 1; // 匹配成功得分
-                }
-            }
+        for (Map.Entry<String, Integer> entry : contentMatches.entrySet()) {
+            score += entry.getValue(); // 內容匹配得分
         }
 
         return score;
-    }
-
-    private int computeHash(String str) {
-        int hash = 0;
-        int prime = 31; // 使用素数作为权重基数
-        for (char c : str.toCharArray()) {
-            hash = hash * prime + c;
-        }
-        return hash;
     }
 
     private int calculateWeightedScore(String title, String content) {
@@ -133,5 +130,82 @@ public class CourseRanker {
             }
         }
         return score;
+    }
+
+    // Aho-Corasick 自動機實現
+    private static class ACAutomaton {
+        private final TrieNode root;
+
+        public ACAutomaton() {
+            root = new TrieNode();
+        }
+
+        public void insert(String keyword) {
+            TrieNode node = root;
+            for (char c : keyword.toCharArray()) {
+                node = node.children.computeIfAbsent(c, k -> new TrieNode());
+            }
+            node.outputs.add(keyword);
+        }
+
+        public void buildFailureLinks() {
+            Queue<TrieNode> queue = new LinkedList<>();
+            root.fail = root;
+
+            for (TrieNode child : root.children.values()) {
+                child.fail = root;
+                queue.add(child);
+            }
+
+            while (!queue.isEmpty()) {
+                TrieNode current = queue.poll();
+
+                for (Map.Entry<Character, TrieNode> entry : current.children.entrySet()) {
+                    char c = entry.getKey();
+                    TrieNode child = entry.getValue();
+
+                    TrieNode failNode = current.fail;
+                    while (failNode != root && !failNode.children.containsKey(c)) {
+                        failNode = failNode.fail;
+                    }
+
+                    if (failNode.children.containsKey(c)) {
+                        child.fail = failNode.children.get(c);
+                    } else {
+                        child.fail = root;
+                    }
+
+                    child.outputs.addAll(child.fail.outputs);
+                    queue.add(child);
+                }
+            }
+        }
+
+        public Map<String, Integer> search(String text) {
+            Map<String, Integer> keywordCounts = new HashMap<>();
+            TrieNode node = root;
+
+            for (char c : text.toCharArray()) {
+                while (node != root && !node.children.containsKey(c)) {
+                    node = node.fail;
+                }
+
+                if (node.children.containsKey(c)) {
+                    node = node.children.get(c);
+                }
+
+                for (String keyword : node.outputs) {
+                    keywordCounts.put(keyword, keywordCounts.getOrDefault(keyword, 0) + 1);
+                }
+            }
+
+            return keywordCounts;
+        }
+
+        private static class TrieNode {
+            Map<Character, TrieNode> children = new HashMap<>();
+            TrieNode fail;
+            List<String> outputs = new ArrayList<>();
+        }
     }
 }

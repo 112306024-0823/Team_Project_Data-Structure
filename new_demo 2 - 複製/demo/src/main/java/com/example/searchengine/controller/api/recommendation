@@ -1,0 +1,38 @@
+@RestController
+@RequestMapping("/api")
+public class SearchController {
+
+    @Autowired
+    private GoogleQuery googleQuery;
+
+    @GetMapping("/recommendations")
+    public List<String> getRecommendations(@RequestParam("query") String query) throws IOException {
+        // 呼叫 GoogleQuery 獲取搜尋結果
+        Map<String, String> results = googleQuery.fetchResults(query, null, null);
+
+        // 提取關鍵字作為推薦
+        return extractKeywords(results);
+    }
+
+    private List<String> extractKeywords(Map<String, String> results) {
+        // 停用詞
+        Set<String> stopWords = Set.of("的", "是", "在", "和", "也", "對", "於", "了");
+        Map<String, Integer> keywordFrequency = new HashMap<>();
+
+        for (String title : results.keySet()) {
+            String[] words = title.split("\\s+"); // 簡單分詞
+            for (String word : words) {
+                if (!stopWords.contains(word) && word.length() > 1) {
+                    keywordFrequency.put(word, keywordFrequency.getOrDefault(word, 0) + 1);
+                }
+            }
+        }
+
+        // 返回頻率最高的前 5 個詞
+        return keywordFrequency.entrySet().stream()
+                .sorted((a, b) -> b.getValue().compareTo(a.getValue()))
+                .map(Map.Entry::getKey)
+                .limit(5)
+                .collect(Collectors.toList());
+    }
+}

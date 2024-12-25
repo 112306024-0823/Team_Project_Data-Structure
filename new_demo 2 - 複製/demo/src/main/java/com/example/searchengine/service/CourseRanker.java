@@ -7,6 +7,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -14,16 +15,13 @@ import org.springframework.stereotype.Service;
 @Service
 public class CourseRanker {
 
-    // 初始化關鍵字權重
     private static Map<String, Integer> loadKeywordWeights() {
         Map<String, Integer> keywordWeights = new HashMap<>();
 
-        // 政大相關
         keywordWeights.put("政大", 150);
-        keywordWeights.put("政治大學", 100);
-        keywordWeights.put("NCCU", 100);
+        //keywordWeights.put("政治大學", 100);
+        //keywordWeights.put("NCCU", 100);
 
-        // 課程名稱和評價相關
         keywordWeights.put("課程", 50);
         keywordWeights.put("評價", 30);
         keywordWeights.put("心得", 25);
@@ -31,14 +29,12 @@ public class CourseRanker {
         keywordWeights.put("必選", 20);
         keywordWeights.put("好過", 20);
 
-        // 課程特性
         keywordWeights.put("甜", 40);
         keywordWeights.put("涼", 35);
         keywordWeights.put("簡單", 30);
         keywordWeights.put("挑戰性", 25);
         keywordWeights.put("加簽", 50);
 
-        // 教學特點
         keywordWeights.put("老師", 40);
         keywordWeights.put("互動", 30);
         keywordWeights.put("討論", 25);
@@ -55,15 +51,24 @@ public class CourseRanker {
         this.keywordWeights = loadKeywordWeights();
     }
 
-    public Map<String, Integer> rankKeywords(Map<String, String> results, List<String> keywords) {
+    public Map<String, Integer> rankKeywords(Map<String, String> results, List<String> keywords, String courseType, Integer year) {
         if (results == null || keywords == null || keywords.isEmpty()) {
-            return new HashMap<>(); // 返回空結果
+            return new HashMap<>();
         }
 
-        // 初始化 Aho-Corasick 自動機
+        // 定義要篩除的主題
+        Set<String> excludedTopics = Set.of("租屋", "加簽","考古題","雨勢","面試","徵書","二手書");
+
+
         ACAutomaton automaton = new ACAutomaton();
         for (String keyword : keywords) {
             automaton.insert(keyword);
+        }
+        if (courseType != null && !courseType.isEmpty()) {
+            automaton.insert(courseType);
+        }
+        if (year != null) {
+            automaton.insert(year.toString());
         }
         automaton.buildFailureLinks();
 
@@ -72,25 +77,19 @@ public class CourseRanker {
             String title = entry.getKey();
             String content = entry.getValue();
 
-            // 跳過包含特定關鍵字的標題
-            if (title.contains("考古題") || title.contains("加簽")) {
+            if (excludedTopics.stream().anyMatch(title::contains)) {
                 continue;
             }
 
-
-
-            // 匹配標題和內容
             Map<String, Integer> titleMatches = automaton.search(title);
             Map<String, Integer> contentMatches = automaton.search(content);
 
-            // 計算總得分
             int totalScore = calculateACScore(titleMatches, contentMatches);
             totalScore += calculateWeightedScore(title, content);
 
             rankedResults.put(title, totalScore);
         }
 
-        // 按分數降序排序
         return rankedResults.entrySet().stream()
                 .sorted((a, b) -> b.getValue().compareTo(a.getValue()))
                 .collect(Collectors.toMap(
@@ -103,16 +102,12 @@ public class CourseRanker {
 
     private int calculateACScore(Map<String, Integer> titleMatches, Map<String, Integer> contentMatches) {
         int score = 0;
-
-        // 標題和內容匹配的加權分數
         for (Map.Entry<String, Integer> entry : titleMatches.entrySet()) {
-            score += entry.getValue() * 5; // 標題匹配得分更高
+            score += entry.getValue() * 5;
         }
-
         for (Map.Entry<String, Integer> entry : contentMatches.entrySet()) {
-            score += entry.getValue(); // 內容匹配得分
+            score += entry.getValue();
         }
-
         return score;
     }
 
@@ -123,16 +118,15 @@ public class CourseRanker {
             int weight = entry.getValue();
 
             if (title.contains(evalKeyword)) {
-                score += weight * 2; // 標題中的關鍵字權重更高
+                score += weight * 2;
             }
             if (content.contains(evalKeyword)) {
-                score += weight; // 內文中的關鍵字權重
+                score += weight;
             }
         }
         return score;
     }
 
-    // Aho-Corasick 自動機實現
     private static class ACAutomaton {
         private final TrieNode root;
 

@@ -48,7 +48,7 @@ public class GoogleQuery {
         siteFilter.delete(siteFilter.length() - 4, siteFilter.length()); // 移除多餘的 " OR "
 
         // 將目標網站與用戶的關鍵字組合
-        String url = "https://www.google.com/search?q=" + URLEncoder.encode("(" + siteFilter + ") " + searchQuery, "UTF-8") + "&num=30";
+        String url = "https://www.google.com/search?q=" + URLEncoder.encode("(" + siteFilter + ") " + searchQuery, "UTF-8") + "&num=50";
         System.out.println("Query URL: " + url);
 
         // 抓取搜尋結果

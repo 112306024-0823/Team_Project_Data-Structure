@@ -20,7 +20,7 @@
             padding: 20px;
             text-align: center;
             box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-            border-bottom: 3px solid #b5d3f2;
+            border-bottom: 5px solid #b5d3f2;
         }
 
         .header h1 {
@@ -47,18 +47,11 @@
         .form-container input,
         .form-container select {
             border-radius: 20px;
-            padding: 10px 20px; /* 增加左右內間距 */
+            padding: 10px 20px;
             border: 1px solid #ddd;
             background-color: #fff;
-            box-shadow: none; /* 移除內陰影 */
-            appearance: none; /* 移除預設樣式 */
-            -webkit-appearance: none; /* WebKit 瀏覽器 */
-            -moz-appearance: none; /* Firefox */
-        }
-
-        .form-container input::placeholder {
-            font-size: 0.9rem;
-            color: #aaa;
+            width: 100%;
+            box-shadow: none;
         }
 
         .form-container input:focus,
@@ -66,30 +59,6 @@
             border-color: #888;
             outline: none;
             box-shadow: 0px 0px 6px rgba(136, 136, 136, 0.6);
-        }
-
-        .form-container select::placeholder {
-            color: #aaa;
-        }
-
-        .form-container select {
-            position: relative;
-        }
-
-        .form-container select::after {
-            content: "";
-            position: absolute;
-        }
-
-        .form-container .form-group::after {
-            content: "▼"; /* 自定義下拉箭頭 */
-            font-size: 14px;
-            color: #666;
-            position: absolute;
-            top: 50%;
-            right: 20px;
-            transform: translateY(-50%);
-            pointer-events: none; /* 讓箭頭不影響選單操作 */
         }
 
         .btn-primary {
@@ -142,6 +111,41 @@
 
         .list-group-item a:hover {
             text-decoration: underline;
+        }
+
+        .recommendations-container {
+            background-color: #ffffff;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            margin: 20px auto;
+            max-width: 800px;
+        }
+
+        .recommendations-container h4 {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .recommendations {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .recommendation-item {
+            background-color: #eaf6ff;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            color: #49709a;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .recommendation-item:hover {
+            background-color: #cce4ff;
         }
 
         footer {
@@ -209,9 +213,41 @@
         </ul>
     </div>
 
+    <div class="recommendations-container">
+        <h4>推薦搜尋：</h4>
+        <div class="recommendations" id="recommendations">
+            <div class="recommendation-item">甜</div>
+            <div class="recommendation-item">涼</div>
+            <div class="recommendation-item">硬</div>
+            <div class="recommendation-item">加簽</div>
+            <div class="recommendation-item">課程評價</div>
+            <div class="recommendation-item">必修</div>
+            <div class="recommendation-item">通識</div>
+            <div class="recommendation-item">郁方</div>
+            <div class="recommendation-item">期中</div>
+            <div class="recommendation-item">期末歐趴</div>
+            <div class="recommendation-item">上課</div>
+            <div class="recommendation-item">翹課</div>
+        </div>
+    </div>
+
     <footer>
         &copy; 2024 課超靈 - 課程評價查詢
     </footer>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const queryInput = document.getElementById("query");
+
+            // 點擊推薦詞時更新輸入框
+            document.querySelectorAll(".recommendation-item").forEach(item => {
+                item.addEventListener("click", () => {
+                    queryInput.value = item.textContent;
+                    queryInput.dispatchEvent(new Event("input")); // 手動觸發事件
+                });
+            });
+        });
+    </script>
 </body>
 
 </html>

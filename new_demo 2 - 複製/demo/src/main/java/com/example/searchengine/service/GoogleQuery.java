@@ -3,6 +3,7 @@ package com.example.searchengine.service;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,18 +48,33 @@ public class GoogleQuery {
         }
         siteFilter.delete(siteFilter.length() - 4, siteFilter.length()); // 移除多餘的 " OR "
 
-        // 將目標網站與用戶的關鍵字組合
-        String url = "https://www.google.com/search?q=" + URLEncoder.encode("(" + siteFilter + ") " + searchQuery, "UTF-8") + "&num=50";
+        // 組裝 Google 搜尋 URL
+        String url = "https://www.google.com/search?q=" + URLEncoder.encode("(" + siteFilter + ") " + searchQuery, "UTF-8") + "&num=150";
         System.out.println("Query URL: " + url);
 
-        // 抓取搜尋結果
-        String content = crawler.fetchContent(url);
-        if (content == null || content.isEmpty()) {
+        // 抓取主頁內容
+        String mainPageContent = crawler.fetchContent(url);
+        if (mainPageContent == null || mainPageContent.isEmpty()) {
             System.err.println("Failed to fetch content for URL: " + url);
             return new HashMap<>();
         }
 
-        // 解析搜尋結果
-        return htmlHandler.parseResults(content);
+        // 解析主頁結果
+        Map<String, String> results = htmlHandler.parseResults(mainPageContent);
+
+        // 提取子網頁鏈接
+        List<String> subLinks = htmlHandler.extractSubLinks(mainPageContent);
+
+        // 抓取子網頁內容
+        for (String subLink : subLinks) {
+            try {
+                String subContent = crawler.fetchContent(subLink);
+                results.put("SubPage: " + subLink, subContent); // 標記為子網頁
+            } catch (IOException e) {
+                System.err.println("Failed to fetch subpage content: " + subLink);
+            }
+        }
+
+        return results; // 返回主頁與子頁的綜合結果
     }
 }

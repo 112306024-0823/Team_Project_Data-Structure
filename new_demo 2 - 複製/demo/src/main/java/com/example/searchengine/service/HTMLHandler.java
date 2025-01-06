@@ -1,7 +1,9 @@
 package com.example.searchengine.service;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -10,9 +12,20 @@ import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
 
 
-
 @Service
 public class HTMLHandler {
+    
+    public List<String> extractSubLinks(String htmlContent) {
+        Document doc = Jsoup.parse(htmlContent);
+        Elements links = doc.select("a[href]"); // 提取所有<a>標籤的 href 屬性
+
+        return links.stream()
+                .map(link -> link.attr("abs:href")) // 獲取絕對 URL
+                .filter(url -> url.startsWith("http")) // 過濾有效的 HTTP URL
+                .distinct() // 去重
+                .collect(Collectors.toList());
+    }
+
 
     public Map<String, String> parseResults(String htmlContent) {
         Map<String, String> results = new HashMap<>();

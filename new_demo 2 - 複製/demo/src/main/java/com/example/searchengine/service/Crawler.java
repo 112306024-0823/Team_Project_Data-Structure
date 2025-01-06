@@ -2,7 +2,9 @@ package com.example.searchengine.service;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -28,5 +30,47 @@ public class Crawler {
 
         return paragraphs;
     }
-}
 
+    public List<String> extractSubLinks(String htmlContent) {
+        Document doc = Jsoup.parse(htmlContent);
+        List<String> subLinks = new ArrayList<>();
+
+        // 提取所有 <a> 標籤中的 href 屬性
+        doc.select("a[href]").forEach(link -> {
+            String href = link.attr("abs:href"); // 獲取絕對 URL
+            if (href.startsWith("http")) { // 過濾掉無效的鏈接
+                subLinks.add(href);
+            }
+        });
+
+        return subLinks;
+    }
+
+    public Map<String, String> fetchAllContents(String url, int maxDepth) throws IOException {
+        Map<String, String> contentMap = new HashMap<>();
+        fetchRecursively(url, maxDepth, 0, contentMap);
+        return contentMap;
+    }
+
+    private void fetchRecursively(String url, int maxDepth, int currentDepth, Map<String, String> contentMap) throws IOException {
+        if (currentDepth > maxDepth) return; // 停止遞歸
+
+        // 抓取當前網頁內容
+        String content = fetchContent(url);
+        contentMap.put(url, content);
+
+        // 提取子鏈接
+        List<String> subLinks = extractSubLinks(content);
+        for (String subLink : subLinks) {
+            if (!contentMap.containsKey(subLink)) { // 防止重複抓取
+                fetchRecursively(subLink, maxDepth, currentDepth + 1, contentMap);
+            }
+        }
+    }
+
+    public List<String> filterParagraphs(List<String> paragraphs, List<String> stopWords) {
+        return paragraphs.stream()
+                .filter(paragraph -> stopWords.stream().noneMatch(paragraph::contains)) // 過濾含有停用詞的段落
+                .toList();
+    }
+}

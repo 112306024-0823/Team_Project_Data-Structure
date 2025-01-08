@@ -36,7 +36,7 @@ public class GoogleQuery {
             "dcard.tw/f/nccu",
             "qrysub.nccu.edu.tw",
             "1111opt.com",
-            "medium.com",
+            
             "ptt.cc/bbs/NCCU"
             
         };
@@ -81,8 +81,12 @@ public class GoogleQuery {
         for (Map.Entry<String, String> entry : results.entrySet()) {
             String mainPageTitle = entry.getKey();
             if (subLink.contains(mainPageTitle)) {
+                int currentScore = Integer.parseInt(entry.getValue()); // 假設 value 存的是分數
+                int updatedScore = currentScore + additionalScore; // 合併分數
+                entry.setValue(String.valueOf(updatedScore)); // 更新分數
+
                 System.out.println("Updating score for main page: " + mainPageTitle);
-                // 具體的分數更新邏輯
+               
             }
         }
     }

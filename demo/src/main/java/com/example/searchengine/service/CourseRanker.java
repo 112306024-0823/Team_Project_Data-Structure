@@ -7,7 +7,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,40 +65,23 @@ public class CourseRanker {
     }
 
     // 使用關鍵字提取與分數計算進行排名
-    public Map<String, Integer> rankKeywords(Map<String, String> results) {
-        if (results == null || results.isEmpty()) {
-            return new HashMap<>();
-        }
-
+        public Map<String, Integer> rankResults(Map<String, String> mainPageResults, Map<String, List<String>> subPageLinks) {
         Map<String, Integer> rankedResults = new HashMap<>();
-        // 定義需要過濾的標題或內文中的關鍵字
-        Set<String> ignoredPhrases = Set.of("作弊", "研究所", "考古題","台大","轉行","加簽","北一女");
-        
 
-        for (Map.Entry<String, String> entry : results.entrySet()) {
-            String title = entry.getKey();
-            String content = entry.getValue();
+        for (Map.Entry<String, String> entry : mainPageResults.entrySet()) {
+            String mainPageTitle = entry.getKey();
+            String mainPageContent = entry.getValue();
 
-            // 過濾標題或內文中包含不需要的關鍵字
-            if (ignoredPhrases.stream().anyMatch(title::contains) || ignoredPhrases.stream().anyMatch(content::contains)) {
-                continue; // 跳過這條記錄
-            }
+            // 計算主網頁分數
+            int mainPageScore = calculatePageScore(mainPageTitle, mainPageContent);
 
+            // 計算子網頁總分
+            List<String> subPages = subPageLinks.getOrDefault(mainPageTitle, new ArrayList<>());
+            int subPagesScore = calculateSubPagesScore(subPages);
 
-            // 使用 KeywordExtractor 提取並計算分數
-            int extractedTitleScore = keywordExtractor.calculateScore(title, keywordWeights);
-            int extractedContentScore = keywordExtractor.calculateScore(content, keywordWeights);
-
-            // 使用 Aho-Corasick 匹配算法
-            Map<String, Integer> titleMatches = matchKeywordsUsingAC(title);
-            Map<String, Integer> contentMatches = matchKeywordsUsingAC(content);
-            int acScore = calculateACScore(titleMatches, contentMatches);
-
-            // 總分計算
-            int totalScore = extractedTitleScore * 2 + extractedContentScore + acScore;
-
-            // 存入排名結果
-            rankedResults.put(title, totalScore);
+            // 合併主網頁與子網頁分數
+            int totalScore = (int) (mainPageScore * 0.7 + subPagesScore * 0.3);
+            rankedResults.put(mainPageTitle, totalScore);
         }
 
         // 按分數降序排序
@@ -113,6 +95,28 @@ public class CourseRanker {
                 ));
     }
 
+    // 計算單頁分數（主網頁或子網頁）
+    private int calculatePageScore(String title, String content) {
+        int titleScore = keywordExtractor.calculateScore(title, keywordWeights) * 2; // 標題分數 ×2
+        int contentScore = keywordExtractor.calculateScore(content, keywordWeights);
+
+        // 使用 AC 匹配計分
+        Map<String, Integer> titleMatches = matchKeywordsUsingAC(title);
+        Map<String, Integer> contentMatches = matchKeywordsUsingAC(content);
+        int acScore = calculateACScore(titleMatches, contentMatches);
+
+        return titleScore + contentScore + acScore;
+    }
+
+    // 計算所有子網頁的總分
+    private int calculateSubPagesScore(List<String> subPages) {
+        int totalScore = 0;
+        for (String subPageContent : subPages) {
+            totalScore += keywordExtractor.calculateScore(subPageContent, keywordWeights);
+        }
+        return totalScore;
+    }
+
     private Map<String, Integer> matchKeywordsUsingAC(String text) {
         ACAutomaton automaton = new ACAutomaton();
         for (String keyword : keywordWeights.keySet()) {
@@ -124,18 +128,15 @@ public class CourseRanker {
 
     private int calculateACScore(Map<String, Integer> titleMatches, Map<String, Integer> contentMatches) {
         int score = 0;
-
-        // 標題和內文匹配的加權分數
         for (Map.Entry<String, Integer> entry : titleMatches.entrySet()) {
             score += entry.getValue() * 5; // 標題匹配得分更高
         }
-
         for (Map.Entry<String, Integer> entry : contentMatches.entrySet()) {
             score += entry.getValue(); // 內文匹配得分
         }
-
         return score;
     }
+
 
     // Aho-Corasick 自動機實現（保留原有邏輯）
     private static class ACAutomaton {

@@ -30,9 +30,9 @@ public class CourseRanker {
         Map<String, Integer> keywordWeights = new HashMap<>();
 
         // 政大相關
-        keywordWeights.put("政大", 150);
+        keywordWeights.put("政大", 200);
         keywordWeights.put("政治大學", 50);
-
+        keywordWeights.put("NCCU", 200);
 
         // 課程名稱和評價相關
         keywordWeights.put("課程", 50);
@@ -41,7 +41,7 @@ public class CourseRanker {
         keywordWeights.put("推薦", 30);
         keywordWeights.put("必選", 20);
         keywordWeights.put("好過", 20);
-
+       
         // 課程特性
         keywordWeights.put("甜", 40);
         keywordWeights.put("涼", 35);
@@ -60,6 +60,11 @@ public class CourseRanker {
         return keywordWeights;
     }
 
+      // 提供權重表的 getter
+    public Map<String, Integer> getKeywordWeights() {
+        return keywordWeights;
+    }
+
     // 使用關鍵字提取與分數計算進行排名
     public Map<String, Integer> rankKeywords(Map<String, String> results) {
         if (results == null || results.isEmpty()) {
@@ -69,7 +74,7 @@ public class CourseRanker {
         Map<String, Integer> rankedResults = new HashMap<>();
         // 定義需要過濾的標題或內文中的關鍵字
         Set<String> ignoredPhrases = Set.of("作弊", "研究所", "考古題","台大","轉行","加簽","北一女");
-
+        
 
         for (Map.Entry<String, String> entry : results.entrySet()) {
             String title = entry.getKey();

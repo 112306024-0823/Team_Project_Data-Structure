@@ -92,3 +92,26 @@ footer {
     border-top: 3px solid #b5d3f2;
     margin-top: 30px;
 }
+
+.recommendation-item {
+    background-color: #eaf6ff; /* 背景色 */
+    border: 1px solid #c8e4ff; /* 邊框顏色 */
+    border-radius: 20px; /* 圓角 */
+    padding: 10px 20px; /* 內邊距 */
+    font-size: 0.9rem; /* 字體大小 */
+    color: #49709a; /* 字體顏色 */
+    cursor: pointer; /* 鼠標效果 */
+    transition: background-color 0.3s ease, transform 0.2s ease; /* 過渡效果 */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* 陰影效果 */
+    outline: none; /* 去除黑框 */
+}
+
+.recommendation-item:hover {
+    background-color: #cce4ff; /* 懸停時背景色 */
+    transform: translateY(-2px); /* 懸停時微移 */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15); /* 懸停時加強陰影 */
+}
+
+.recommendation-item:focus {
+    outline: none; /* 去除點擊後的黑框 */
+}

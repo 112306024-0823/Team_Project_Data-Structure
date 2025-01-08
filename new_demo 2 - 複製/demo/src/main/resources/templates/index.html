@@ -69,6 +69,30 @@
             transition: background-color 0.3s ease, transform 0.2s ease;
         }
 
+        .recommendation-item {
+            background-color: #eaf6ff; /* 背景色 */
+            border: 1px solid #c8e4ff; /* 邊框顏色 */
+            border-radius: 20px; /* 圓角 */
+            padding: 10px 20px; /* 內邊距 */
+            font-size: 0.9rem; /* 字體大小 */
+            color: #49709a; /* 字體顏色 */
+            cursor: pointer; /* 鼠標效果 */
+            transition: background-color 0.3s ease, transform 0.2s ease; /* 過渡效果 */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* 陰影效果 */
+            outline: none; /* 去除黑框 */
+        }
+
+        .recommendation-item:hover {
+            background-color: #cce4ff; /* 懸停時背景色 */
+            transform: translateY(-2px); /* 懸停時微移 */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15); /* 懸停時加強陰影 */
+        }
+
+        .recommendation-item:focus {
+            outline: none; /* 去除點擊後的黑框 */
+        }
+
+
         .btn-primary:hover {
             background-color: #666;
             transform: translateY(-2px);
@@ -216,20 +240,16 @@
     <div class="recommendations-container">
         <h4>推薦搜尋：</h4>
         <div class="recommendations" id="recommendations">
-            <div class="recommendation-item">甜</div>
-            <div class="recommendation-item">涼</div>
-            <div class="recommendation-item">硬</div>
-            <div class="recommendation-item">加簽</div>
-            <div class="recommendation-item">課程評價</div>
-            <div class="recommendation-item">必修</div>
-            <div class="recommendation-item">通識</div>
-            <div class="recommendation-item">郁方</div>
-            <div class="recommendation-item">期中</div>
-            <div class="recommendation-item">期末歐趴</div>
-            <div class="recommendation-item">上課</div>
-            <div class="recommendation-item">翹課</div>
+            <th:block th:each="keyword : ${suggestedKeywords}">
+                <form action="/search" method="get" style="display: inline;">
+                    <input type="hidden" name="query" th:value="${keyword}">
+                    <button type="submit" class="recommendation-item" th:text="${keyword}"></button>
+                </form>
+            </th:block>
         </div>
     </div>
+    
+    
 
     <footer>
         &copy; 2024 課超靈 - 課程評價查詢
@@ -247,6 +267,21 @@
                 });
             });
         });
+
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const queryInput = document.getElementById("query");
+            const form = document.querySelector(".form-container form");
+
+            // 點擊推薦詞時直接提交表單
+                document.querySelectorAll(".recommendation-item").forEach(item => {
+                    item.addEventListener("click", () => {
+                        queryInput.value = item.textContent; // 更新輸入框
+                        form.submit(); // 提交表單
+                    });
+                });
+        });
+
     </script>
 </body>
 

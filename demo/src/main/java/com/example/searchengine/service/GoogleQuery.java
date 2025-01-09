@@ -36,7 +36,6 @@ public class GoogleQuery {
             "dcard.tw/f/nccu",
             "qrysub.nccu.edu.tw",
             "1111opt.com",
-            
             "ptt.cc/bbs/NCCU"
             
         };
